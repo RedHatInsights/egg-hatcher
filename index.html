@@ -1,0 +1,40 @@
+<html>
+	<head>
+		<title>Insights Egg Hatcher</title>
+	</head>
+	<body>
+		<h1>Insights Egg Hatcher</h1>
+		<div>
+			<span>Choose a version, or build from master:</span>
+			<select id='eggs' onchange='computeFilename()'></select>
+		</div>
+		<form method='get' id='form'>
+			<button type='submit' id='button'>Download Egg</button>
+		</form>
+	</body>
+	<script>
+		var select = document.getElementById('eggs');
+		var button = document.getElementById('button');
+		button.disabled = true;
+
+		function computeFilename() {
+			var selectedTag = select.options[select.selectedIndex].value;
+			document.getElementById('form').action = '/eggs/' + selectedTag;
+		}
+
+		function init() {
+			fetch('/eggs')
+			.then(function(res) {
+				return res.json();
+			})
+			.then(function(jso){
+				for (var i in jso) {
+					select.options[select.options.length] = new Option(jso[i]['name'], jso[i]['fullTag'])
+				}
+				computeFilename();
+				button.disabled = false;
+			})
+		}
+		init();
+	</script>
+</html>
