@@ -85,6 +85,12 @@
 				for (var i in jso) {
 					branchSelect.options[branchSelect.options.length] = new Option(jso[i]['name'], jso[i]['name'])
 				}
+				// set master as default
+				for (var i in branchSelect.options) {
+					if (branchSelect.options[i].value === 'master') {
+						branchSelect.selectedIndex = i;
+					}
+				}
 				computeBranchFilename();
 				branchButton.disabled = false;
 			})
