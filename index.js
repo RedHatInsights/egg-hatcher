@@ -20,6 +20,21 @@ function trimTag(str) {
     return str;
 }
 
+function getBranches(cb) {
+    exec('git branch -r', {cwd: gitDir}, (err, stdout, stderr) => {
+        if (err) {
+            cb(err, null);
+            return;
+        }
+        let branches = stdout.split('\n');
+        let filtered = branches.map(b => ({
+            name: b.trim().split('origin/')[1],
+            fullBranch: b.trim()
+        })).filter(b => b.name !== undefined && !b.name.includes('HEAD -> '));
+        cb(null, filtered);
+    });
+}
+
 function getTags(cb) {
     exec('(git checkout master && git pull)  > /dev/null && git --no-pager tag',
          {cwd: gitDir}, (err, stdout, stderr) => {
@@ -57,7 +72,7 @@ function createEggFromTag(tag, cb) {
 }
 
 app.set('port', 3000);
-app.get('/eggs/:tag', (req, res) => {
+app.get('/tag/:tag', (req, res) => {
     // create an egg and prep for download
     createEggFromTag(req.params.tag, (err, eggFile) => {
         if (err) {
@@ -68,9 +83,31 @@ app.get('/eggs/:tag', (req, res) => {
     })
 });
 
-app.get('/eggs', (req, res) => {
+app.get('/tag', (req, res) => {
     // get list of all eggs by github tag
     getTags((err, data) => {
+        if (err) {
+            res.status(500).send();
+            return;
+        }
+        res.status(200).send(data);
+    })
+});
+
+app.get('/branch/:branch', (req, res) => {
+    // create an egg and prep for download
+    createEggFromTag(req.params.branch, (err, eggFile) => {
+        if (err) {
+            res.status(500).send();
+            return;
+        }
+        res.download(zipFile, 'insights-core-' + req.params.branch + '.egg');
+    })
+});
+
+app.get('/branch', (req, res) => {
+    // get list of all eggs by github tag
+    getBranches((err, data) => {
         if (err) {
             res.status(500).send();
             return;

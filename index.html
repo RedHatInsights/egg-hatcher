@@ -1,38 +1,92 @@
 <html>
 	<head>
-		<title>Insights Egg Hatcher</title>
+		<title>Insights Client Egg Hatcher</title>
+		<style>
+			body {
+				width: 60%;
+				margin-left: 20%;
+				margin-right: 20%;
+			}
+			h1 {
+				text-align: center;
+			}
+			.section {
+				width:40%;
+				text-align: right;
+				display: inline-block;
+				margin: auto;
+				vertical-align: top
+			}
+			select {
+				margin-bottom: 10px;
+			}
+		</style>
 	</head>
 	<body>
-		<h1>Insights Egg Hatcher</h1>
-		<div>
-			<span>Choose a version, or build from master:</span>
-			<select id='eggs' onchange='computeFilename()'></select>
+		<h1>Insights Client<br>🥚<br>Egg Hatcher</h1>
+		<div class='section'>
+			<h2>Get by tag (released):</h2>
+			<select id='tags' onchange='computeTagFilename()'></select>
+			<div>
+				<form method='get' id='tagForm'>
+					<button type='submit' id='tagEggDL'>Get .egg</button>
+				</form>
+				<!--<form method='get' id='tagAscForm'>
+					<button type='submit' id='tagAscDL'>Get .asc</button>
+				</form> -->
+			</div>
 		</div>
-		<form method='get' id='form'>
-			<button type='submit' id='button'>Download Egg</button>
-		</form>
+		<div class='section'>
+			<h2>Build from branch (dev):</h2>
+			<select id='branches' onchange='computeBranchFilename()'></select>
+			<form method='get' id='branchForm'>
+				<button type='submit' id='branchEggDL'>Get .egg</button>
+			</form>
+		</div>
 	</body>
 	<script>
-		var select = document.getElementById('eggs');
-		var button = document.getElementById('button');
-		button.disabled = true;
+		var tagSelect = document.getElementById('tags');
+		var branchSelect = document.getElementById('branches');
+		var tagButton1 = document.getElementById('tagEggDL');
+		// var tagButton2 = document.getElementById('tagAscDL');
+		var branchButton = document.getElementById('branchEggDL');
+		tagButton1.disabled = true;
+		// tagButton2.disabled = true;
+		branchButton.disabled = true;
 
-		function computeFilename() {
-			var selectedTag = select.options[select.selectedIndex].value;
-			document.getElementById('form').action = '/eggs/' + selectedTag;
+		function computeTagFilename() {
+			var selectedTag = tagSelect.options[tagSelect.selectedIndex].value;
+			document.getElementById('tagForm').action = '/tag/' + selectedTag;
+			// document.getElementById('tagAscForm').action = '/tag/' + selectedTag;
+		}
+
+		function computeBranchFilename() {
+			var selectedBranch = branchSelect.options[branchSelect.selectedIndex].value;
+			document.getElementById('branchForm').action = '/branch/' + selectedBranch;
 		}
 
 		function init() {
-			fetch('/eggs')
+			fetch('/tag')
 			.then(function(res) {
 				return res.json();
 			})
 			.then(function(jso){
 				for (var i in jso) {
-					select.options[select.options.length] = new Option(jso[i]['name'], jso[i]['fullTag'])
+					tagSelect.options[tagSelect.options.length] = new Option(jso[i]['name'], jso[i]['fullTag'])
 				}
-				computeFilename();
-				button.disabled = false;
+				computeTagFilename();
+				tagButton1.disabled = false;
+			})
+			fetch('/branch')
+			.then(function(res) {
+				return res.json();
+			})
+			.then(function(jso){
+				for (var i in jso) {
+					branchSelect.options[branchSelect.options.length] = new Option(jso[i]['name'], jso[i]['name'])
+				}
+				computeBranchFilename();
+				branchButton.disabled = false;
 			})
 		}
 		init();
