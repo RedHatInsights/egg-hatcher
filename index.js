@@ -36,7 +36,7 @@ function getBranches(cb) {
 }
 
 function getTags(cb) {
-    exec('(git checkout master && git pull)  > /dev/null && git --no-pager tag --sort=committerdate',
+    exec('(git checkout master && git pull)  > /dev/null && git --no-pager tag',
          {cwd: gitDir}, (err, stdout, stderr) => {
         if (err) {
             cb(err, null);
@@ -47,9 +47,15 @@ function getTags(cb) {
         {
             name: trimTag(t),
             fullTag: t
-        })).filter(t => t.name !== '');
+        })).filter(t => t.name !== '')
+        filtered.sort((a,b) => {
+            if (a.name > b.name)
+                return 1;
+            if (a.name < b.name)
+                return -1;
+            return 0;
+        });
         filtered.reverse();
-        console.log(filtered);
         cb(null, filtered);
     });
 }
