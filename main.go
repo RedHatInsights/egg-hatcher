@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -52,12 +51,13 @@ func main() {
 			}
 
 			log.Println("git fetch")
-			err = repo.Fetch(&git.FetchOptions{})
+			err := repo.Fetch(&git.FetchOptions{})
 			if err != nil {
 				if err == git.NoErrAlreadyUpToDate {
 					continue
 				}
-				break
+				log.Printf("Error: %v", err)
+				continue
 			}
 
 		}
@@ -76,6 +76,6 @@ func main() {
 		http.ServeFile(w, r, "./index.html")
 	})
 
-	fmt.Println("egg-hatcher now accepting connections on port 3000 ...")
+	log.Println("egg-hatcher now accepting connections on port 3000 ...")
 	log.Fatal(http.ListenAndServe("localhost:3000", r))
 }
