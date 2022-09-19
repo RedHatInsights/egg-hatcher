@@ -7,8 +7,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/go-git/go-git/v5"
 	"github.com/julienschmidt/httprouter"
-	"gopkg.in/src-d/go-git.v4"
 )
 
 const repoURL = "https://github.com/RedHatInsights/insights-core"
