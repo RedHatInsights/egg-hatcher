@@ -1,3 +1,4 @@
+<!doctype html>
 <html>
 	<head>
 		<title>Insights Client Egg Hatcher</title>
@@ -27,29 +28,20 @@
 		<div class='section'>
 			<h2>Select forked repo (dev):</h2>
 			<select id='forks' onchange='computeForkFilename()'></select>
-			<div>
-				<form method='get' id='forkForm'>
-					<button type='submit' id='forkEggDL'>Select</button>
-				</form>
-			</div>
+			<h2>Build from branch (From selected repo):</h2>
+			<select id='branches' onchange='computeBranchFilename()'></select>
+			<form method='get' id='branchForm'>
+				<button type='submit' id='branchEggDL'>Get .egg</button>
+			</form>
 		</div>
+	
 		<div class='section'>
-			<h2>Get by tag (released):</h2>
+			<h2>Get by tag (From RedHatInsights):</h2>
 			<select id='tags' onchange='computeTagFilename()'></select>
 			<div>
 				<form method='get' id='tagForm'>
 					<button type='submit' id='tagEggDL'>Get .egg</button>
 				</form>
-				<!--<form method='get' id='tagAscForm'>
-					<button type='submit' id='tagAscDL'>Get .asc</button>
-				</form> -->
-			</div>
-			<h2>Build from branch (dev):</h2>
-			<select id='branches' onchange='computeBranchFilename()'></select>
-			<div>
-			<form method='get' id='branchForm'>
-				<button type='submit' id='branchEggDL'>Get .egg</button>
-			</form>
 			</div>
 		</div>
 	</body>
@@ -59,10 +51,15 @@
 		var tagButton1 = document.getElementById('tagEggDL');
 		var branchButton = document.getElementById('branchEggDL');
 		var forkSelect = document.getElementById('forks');
-		var forkButton = document.getElementById('forkEggDL')
 		tagButton1.disabled = true;
 		branchButton.disabled = true;
-		forkButton.disabled = true;
+
+		var remote_repo = 'RedHatInsights'
+
+		function updateRemote (selectedFork){
+			remote_repo = selectedFork
+			updateBranch()
+		}
 
 		function computeTagFilename() {
 			var selectedTag = tagSelect.options[tagSelect.selectedIndex].value;
@@ -71,45 +68,18 @@
 
 		function computeForkFilename(){
 			var selectedFork = forkSelect.options[forkSelect.selectedIndex].value;
-			document.getElementById('forkForm').action = '/repo/' + selectedFork;
+			updateRemote(selectedFork);
 
 		}
 
 		function computeBranchFilename() {
 			var selectedBranch = branchSelect.options[branchSelect.selectedIndex].value;
-			document.getElementById('branchForm').action = '/branch/' + selectedBranch;
+			console.log(remote_repo);
+			document.getElementById('branchForm').action = '/fork/' + remote_repo + '/branch/' + selectedBranch;
 		}
 
-		function init() {
-			fetch('/fork')
-			.then(function(res){
-				return res.json();
-			})
-			.then(function(jso){
-				for (var i in jso){
-					forkSelect.options[forkSelect.options.length] = new Option(jso[i]['name'])
-				}
-				// set upstream as default
-				for (var i in forkSelect.options){
-					if (forkSelect.options[i].value === 'RedHatInsights'){
-						forkSelect.selectedIndex = i;
-					}
-				}
-				computeForkFilename();
-				forkButton.disabled = false;
-			})
-			fetch('/tag')
-			.then(function(res) {
-				return res.json();
-			})
-			.then(function(jso){
-				for (var i in jso) {
-					tagSelect.options[tagSelect.options.length] = new Option(jso[i]['name'], jso[i]['fullTag'])
-				}
-				computeTagFilename();
-				tagButton1.disabled = false;
-			})
-			fetch('/branch')
+		function updateBranch() {
+			fetch(`/fork/${remote_repo}/branch`)
 			.then(function(res) {
 				return res.json();
 			})
@@ -126,6 +96,42 @@
 				computeBranchFilename();
 				branchButton.disabled = false;
 			})
+		}
+
+		function updateFork() {
+			fetch('/fork')
+			.then(function(res){
+				return res.json();
+			})
+			.then(function(jso){
+				for (var i in jso){
+					forkSelect.options[forkSelect.options.length] = new Option(jso[i]['name'])
+				}
+				// set upstream as default
+				for (var i in forkSelect.options){
+					if (forkSelect.options[i].value == remote_repo){
+						forkSelect.selectedIndex = i;
+					}
+				}
+				computeForkFilename();
+				computeBranchFilename()
+			})
+		}
+
+		function init() {
+			updateFork();
+			fetch('/tag')
+			.then(function(res) {
+				return res.json();
+			})
+			.then(function(jso){
+				for (var i in jso) {
+					tagSelect.options[tagSelect.options.length] = new Option(jso[i]['name'], jso[i]['fullTag'])
+				}
+				computeTagFilename();
+				tagButton1.disabled = false;
+			})
+			
 		}
 		init();
 	</script>

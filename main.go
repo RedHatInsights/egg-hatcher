@@ -71,8 +71,8 @@ func main() {
 	r.GET("/fork", getForks)
 	r.GET("/fork/:forkname/branch", getBranchesfromFork)
 	r.GET("/fork/:forkname/branch/:name", getBranch)
-	r.GET("/branch", getBranches)
-	r.GET("/branch/:name", getBranch)
+	//r.GET("/branch", getBranchesfromFork)
+	//r.GET("/branch/:name", getBranch)
 	r.GET("/tag", getTags)
 	r.GET("/tag/:name", getTag)
 	r.GET("/", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {

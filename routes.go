@@ -192,31 +192,34 @@ func getBranchesfromFork(w http.ResponseWriter, r *http.Request, p httprouter.Pa
 		return
 	}
 
+	remote_exists := false
 	for _, remote := range remotes {
 		if remote.Config().Name == name {
 			//change the remote
-			return
+			remote_exists = true
 		}
 	}
 
 	//create a new remote
-	url := "https://github.com/" + name + "/insights-core"
-	config := &config.RemoteConfig{
-		Name: name,
-		URLs: []string{url},
-	}
+	if !remote_exists {
+		url := "https://github.com/" + name + "/insights-core"
+		config := &config.RemoteConfig{
+			Name: name,
+			URLs: []string{url},
+		}
 
-	_, err = repo.CreateRemote(config)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "%v", err)
-		return
-	}
-
-	err = repo.Fetch(&git.FetchOptions{RemoteName: name})
-	if err != nil {
-		if err != git.NoErrAlreadyUpToDate {
+		_, err = repo.CreateRemote(config)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprintf(w, "%v", err)
+			return
+		}
+
+		err = repo.Fetch(&git.FetchOptions{RemoteName: name})
+		if err != nil {
+			if err != git.NoErrAlreadyUpToDate {
+				fmt.Fprintf(w, "%v", err)
+			}
 		}
 	}
 
