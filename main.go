@@ -68,6 +68,9 @@ func main() {
 
 	r := httprouter.New()
 
+	r.GET("/fork", getForks)
+	r.GET("/fork/:forkname/branch", getBranchesfromFork)
+	r.GET("/fork/:forkname/branch/:name", getBranch)
 	r.GET("/branch", getBranches)
 	r.GET("/branch/:name", getBranch)
 	r.GET("/tag", getTags)

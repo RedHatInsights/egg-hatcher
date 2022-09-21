@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -13,12 +14,14 @@ import (
 	"strings"
 
 	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/google/go-github/v47/github"
 	"github.com/julienschmidt/httprouter"
 	"github.com/otiai10/copy"
 )
 
-func getBranches(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func getBranches(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	var err error
 
 	repo, err := git.PlainOpen(repoPath)
@@ -28,7 +31,11 @@ func getBranches(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		return
 	}
 
-	remote, err := repo.Remote("origin")
+	remote_name := p.ByName("forkname")
+	if remote_name == "" {
+		remote_name = "origin"
+	}
+	remote, err := repo.Remote(remote_name)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "%v", err)
@@ -62,6 +69,45 @@ func getBranches(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	})
 
 	data, err := json.Marshal(&branches)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "%v", err)
+		return
+	}
+	w.Write(data)
+}
+
+func getForks(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	var err error
+
+	client := github.NewClient(nil)
+
+	ctx := context.Background()
+	opt := &github.RepositoryListForksOptions{}
+	repos, _, err := client.Repositories.ListForks(ctx, "RedHatInsights", "insights-core", opt)
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "%v", err)
+		return
+	}
+
+	forks := make([]map[string]string, 0)
+	fork := map[string]string{
+		"fullName": "RedHatInsights/insights-core",
+		"name":     "RedHatInsights",
+	}
+	forks = append(forks, fork)
+	for _, repos := range repos {
+		fork := map[string]string{
+			"fullName": repos.GetFullName(),
+			"name":     *repos.GetOwner().Login,
+		}
+		forks = append(forks, fork)
+
+	}
+
+	data, err := json.Marshal(&forks)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "%v", err)
@@ -122,6 +168,61 @@ func getTags(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	w.Write(data)
 }
 
+func getBranchesfromFork(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	var err error
+
+	name := p.ByName("forkname")
+	if name == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintf(w, "missing required parameter: name")
+		return
+	}
+
+	repo, err := git.PlainOpen(repoPath)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "%v", err)
+		return
+	}
+	// Check if remote exists
+	remotes, err := repo.Remotes()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "%v", err)
+		return
+	}
+
+	for _, remote := range remotes {
+		if remote.Config().Name == name {
+			//change the remote
+			return
+		}
+	}
+
+	//create a new remote
+	url := "https://github.com/" + name + "/insights-core"
+	config := &config.RemoteConfig{
+		Name: name,
+		URLs: []string{url},
+	}
+
+	_, err = repo.CreateRemote(config)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "%v", err)
+		return
+	}
+
+	err = repo.Fetch(&git.FetchOptions{RemoteName: name})
+	if err != nil {
+		if err != git.NoErrAlreadyUpToDate {
+			fmt.Fprintf(w, "%v", err)
+		}
+	}
+
+	getBranches(w, r, p)
+}
+
 func getBranch(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	var err error
 
@@ -161,7 +262,12 @@ func getBranch(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		return
 	}
 
-	branch := plumbing.NewRemoteReferenceName("origin", name)
+	actual_remote := p.ByName("forkname")
+	if actual_remote == "" {
+		actual_remote = "origin"
+	}
+
+	branch := plumbing.NewRemoteReferenceName(actual_remote, name)
 	err = wt.Checkout(&git.CheckoutOptions{
 		Branch: branch,
 	})
@@ -203,7 +309,7 @@ func getBranch(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	}
 
 	w.Header().Set("Content-Type", "application/zip")
-	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"insights-core-%v-%v.egg\"", strings.TrimPrefix(branch.Short(), "origin/"), head.Hash()))
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"insights-core-%v-%v.egg\"", strings.TrimPrefix(branch.Short(), actual_remote+"/"), head.Hash()))
 	w.Header().Set("Content-Length", strconv.FormatInt(int64(len(data)), 10))
 	w.Write(data)
 }

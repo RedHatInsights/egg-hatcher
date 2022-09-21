@@ -25,6 +25,15 @@
 	<body>
 		<h1>Insights Client<br>🥚<br>Egg Hatcher</h1>
 		<div class='section'>
+			<h2>Select forked repo (dev):</h2>
+			<select id='forks' onchange='computeForkFilename()'></select>
+			<div>
+				<form method='get' id='forkForm'>
+					<button type='submit' id='forkEggDL'>Select</button>
+				</form>
+			</div>
+		</div>
+		<div class='section'>
 			<h2>Get by tag (released):</h2>
 			<select id='tags' onchange='computeTagFilename()'></select>
 			<div>
@@ -35,29 +44,35 @@
 					<button type='submit' id='tagAscDL'>Get .asc</button>
 				</form> -->
 			</div>
-		</div>
-		<div class='section'>
 			<h2>Build from branch (dev):</h2>
 			<select id='branches' onchange='computeBranchFilename()'></select>
+			<div>
 			<form method='get' id='branchForm'>
 				<button type='submit' id='branchEggDL'>Get .egg</button>
 			</form>
+			</div>
 		</div>
 	</body>
 	<script>
 		var tagSelect = document.getElementById('tags');
 		var branchSelect = document.getElementById('branches');
 		var tagButton1 = document.getElementById('tagEggDL');
-		// var tagButton2 = document.getElementById('tagAscDL');
 		var branchButton = document.getElementById('branchEggDL');
+		var forkSelect = document.getElementById('forks');
+		var forkButton = document.getElementById('forkEggDL')
 		tagButton1.disabled = true;
-		// tagButton2.disabled = true;
 		branchButton.disabled = true;
+		forkButton.disabled = true;
 
 		function computeTagFilename() {
 			var selectedTag = tagSelect.options[tagSelect.selectedIndex].value;
 			document.getElementById('tagForm').action = '/tag/' + selectedTag;
-			// document.getElementById('tagAscForm').action = '/tag/' + selectedTag;
+		}
+
+		function computeForkFilename(){
+			var selectedFork = forkSelect.options[forkSelect.selectedIndex].value;
+			document.getElementById('forkForm').action = '/repo/' + selectedFork;
+
 		}
 
 		function computeBranchFilename() {
@@ -66,6 +81,23 @@
 		}
 
 		function init() {
+			fetch('/fork')
+			.then(function(res){
+				return res.json();
+			})
+			.then(function(jso){
+				for (var i in jso){
+					forkSelect.options[forkSelect.options.length] = new Option(jso[i]['name'])
+				}
+				// set upstream as default
+				for (var i in forkSelect.options){
+					if (forkSelect.options[i].value === 'RedHatInsights'){
+						forkSelect.selectedIndex = i;
+					}
+				}
+				computeForkFilename();
+				forkButton.disabled = false;
+			})
 			fetch('/tag')
 			.then(function(res) {
 				return res.json();
