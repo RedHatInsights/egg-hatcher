@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -16,7 +15,6 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/google/go-github/v47/github"
 	"github.com/julienschmidt/httprouter"
 	"github.com/otiai10/copy"
 )
@@ -77,37 +75,8 @@ func getBranches(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	w.Write(data)
 }
 
-func getForks(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	var err error
-
-	client := github.NewClient(nil)
-
-	ctx := context.Background()
-	opt := &github.RepositoryListForksOptions{}
-	repos, _, err := client.Repositories.ListForks(ctx, "RedHatInsights", "insights-core", opt)
-
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "%v", err)
-		return
-	}
-
-	forks := make([]map[string]string, 0)
-	fork := map[string]string{
-		"fullName": "RedHatInsights/insights-core",
-		"name":     "RedHatInsights",
-	}
-	forks = append(forks, fork)
-	for _, repos := range repos {
-		fork := map[string]string{
-			"fullName": repos.GetFullName(),
-			"name":     *repos.GetOwner().Login,
-		}
-		forks = append(forks, fork)
-
-	}
-
-	data, err := json.Marshal(&forks)
+func getCacheForks(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	data, err := json.Marshal(&forks_cache)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "%v", err)

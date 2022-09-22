@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -8,12 +9,45 @@ import (
 	"time"
 
 	"github.com/go-git/go-git/v5"
+	"github.com/google/go-github/v47/github"
 	"github.com/julienschmidt/httprouter"
 )
 
 const repoURL = "https://github.com/RedHatInsights/insights-core"
 
 var repoPath = ""
+
+var forks_cache = make([]map[string]string, 0)
+
+func getGithubForks() {
+	var err error
+	forks_cache = nil
+	client := github.NewClient(nil)
+
+	ctx := context.Background()
+	opt := &github.RepositoryListForksOptions{}
+	repos, _, err := client.Repositories.ListForks(ctx, "RedHatInsights", "insights-core", opt)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	forks := make([]map[string]string, 0)
+	fork := map[string]string{
+		"fullName": "RedHatInsights/insights-core",
+		"name":     "RedHatInsights",
+	}
+	forks = append(forks, fork)
+	for _, repos := range repos {
+		fork := map[string]string{
+			"fullName": repos.GetFullName(),
+			"name":     *repos.GetOwner().Login,
+		}
+		forks = append(forks, fork)
+
+	}
+	forks_cache = forks
+}
 
 func main() {
 	var err error
@@ -39,6 +73,8 @@ func main() {
 		}
 	}
 
+	getGithubForks()
+
 	go func() {
 		var err error
 		for {
@@ -60,6 +96,8 @@ func main() {
 				continue
 			}
 
+			getGithubForks()
+
 		}
 		if err != nil {
 			log.Fatal(err)
@@ -68,11 +106,9 @@ func main() {
 
 	r := httprouter.New()
 
-	r.GET("/fork", getForks)
+	r.GET("/fork", getCacheForks)
 	r.GET("/fork/:forkname/branch", getBranchesfromFork)
 	r.GET("/fork/:forkname/branch/:name", getBranch)
-	//r.GET("/branch", getBranchesfromFork)
-	//r.GET("/branch/:name", getBranch)
 	r.GET("/tag", getTags)
 	r.GET("/tag/:name", getTag)
 	r.GET("/", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
