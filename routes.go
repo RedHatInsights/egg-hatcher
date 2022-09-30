@@ -76,7 +76,7 @@ func getBranches(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 }
 
 func getCacheForks(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	data, err := json.Marshal(&forks_cache)
+	data, err := json.Marshal(&forksCache)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "%v", err)

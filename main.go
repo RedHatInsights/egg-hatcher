@@ -17,11 +17,11 @@ const repoURL = "https://github.com/RedHatInsights/insights-core"
 
 var repoPath = ""
 
-var forks_cache = make([]map[string]string, 0)
+var forksCache = make([]map[string]string, 0)
 
-func getGithubForks() {
+func getGithubForks() error {
 	var err error
-	forks_cache = nil
+	forksCache = nil
 	client := github.NewClient(nil)
 
 	ctx := context.Background()
@@ -29,7 +29,7 @@ func getGithubForks() {
 	repos, _, err := client.Repositories.ListForks(ctx, "RedHatInsights", "insights-core", opt)
 
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	forks := make([]map[string]string, 0)
@@ -46,7 +46,8 @@ func getGithubForks() {
 		forks = append(forks, fork)
 
 	}
-	forks_cache = forks
+	forksCache = forks
+	return err
 }
 
 func main() {
@@ -96,7 +97,9 @@ func main() {
 				continue
 			}
 
-			getGithubForks()
+			if err := getGithubForks(); err != nil {
+				log.Fatalf("error creating github forks cache: %v", err)
+			}
 
 		}
 		if err != nil {
@@ -111,6 +114,8 @@ func main() {
 	r.GET("/fork/:forkname/branch/:name", getBranch)
 	r.GET("/tag", getTags)
 	r.GET("/tag/:name", getTag)
+	r.GET("/branch", getBranches)
+	r.GET("/branch/:name", getBranch)
 	r.GET("/", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		http.ServeFile(w, r, "./index.html")
 	})
