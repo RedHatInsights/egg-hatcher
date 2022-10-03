@@ -19,6 +19,8 @@ var repoPath = ""
 
 var forksCache = make([]map[string]string, 0)
 
+var forkCacheTimestamp = time.Now()
+
 func getGithubForks() error {
 	var err error
 	forksCache = nil
@@ -47,6 +49,7 @@ func getGithubForks() error {
 
 	}
 	forksCache = forks
+	forkCacheTimestamp = time.Now()
 	return err
 }
 
@@ -74,12 +77,26 @@ func main() {
 		}
 	}
 
-	getGithubForks()
+	if err := getGithubForks(); err != nil {
+		log.Fatalf("error creating github forks cache: %v", err)
+	} else {
+		log.Println("forked repo cache created")
+	}
 
 	go func() {
 		var err error
 		for {
 			time.Sleep(5 * time.Minute)
+
+			timeNow := time.Now()
+			timeElapse := timeNow.Sub(forkCacheTimestamp).Hours()
+			if timeElapse > 1 {
+				log.Println("refreshing fork cache")
+				if err := getGithubForks(); err != nil {
+					log.Fatalf("error creating github forks cache: %v", err)
+					continue
+				}
+			}
 
 			var repo *git.Repository
 			repo, err = git.PlainOpen(repoPath)
@@ -95,10 +112,6 @@ func main() {
 				}
 				log.Printf("Error: %v", err)
 				continue
-			}
-
-			if err := getGithubForks(); err != nil {
-				log.Fatalf("error creating github forks cache: %v", err)
 			}
 
 		}
