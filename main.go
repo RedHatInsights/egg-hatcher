@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/go-git/go-git/v5"
@@ -15,15 +16,13 @@ import (
 
 const repoURL = "https://github.com/RedHatInsights/insights-core"
 
-var repoPath = ""
-
+var repoPath string
 var forksCache = make([]map[string]string, 0)
-
 var forkCacheTimestamp = time.Now()
+var lock sync.RWMutex
 
 func getGithubForks() error {
 	var err error
-	forksCache = nil
 	client := github.NewClient(nil)
 
 	ctx := context.Background()
@@ -48,6 +47,8 @@ func getGithubForks() error {
 		forks = append(forks, fork)
 
 	}
+	lock.Lock()
+	defer lock.Unlock()
 	forksCache = forks
 	forkCacheTimestamp = time.Now()
 	return err
