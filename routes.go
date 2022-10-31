@@ -13,12 +13,13 @@ import (
 	"strings"
 
 	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/julienschmidt/httprouter"
 	"github.com/otiai10/copy"
 )
 
-func getBranches(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func getBranches(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	var err error
 
 	repo, err := git.PlainOpen(repoPath)
@@ -28,7 +29,11 @@ func getBranches(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		return
 	}
 
-	remote, err := repo.Remote("origin")
+	remoteName := p.ByName("forkname")
+	if remoteName == "" {
+		remoteName = "origin"
+	}
+	remote, err := repo.Remote(remoteName)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "%v", err)
@@ -62,6 +67,18 @@ func getBranches(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	})
 
 	data, err := json.Marshal(&branches)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "%v", err)
+		return
+	}
+	w.Write(data)
+}
+
+func getCacheForks(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	lock.RLock()
+	defer lock.RUnlock()
+	data, err := json.Marshal(&forksCache)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "%v", err)
@@ -122,6 +139,64 @@ func getTags(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	w.Write(data)
 }
 
+func getBranchesfromFork(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	var err error
+
+	name := p.ByName("forkname")
+	if name == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintf(w, "missing required parameter: name")
+		return
+	}
+
+	repo, err := git.PlainOpen(repoPath)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "%v", err)
+		return
+	}
+	// Check if remote exists
+	remotes, err := repo.Remotes()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "%v", err)
+		return
+	}
+
+	remoteExists := false
+	for _, remote := range remotes {
+		if remote.Config().Name == name {
+			//change the remote
+			remoteExists = true
+		}
+	}
+
+	//create a new remote
+	if !remoteExists {
+		url := "https://github.com/" + name + "/insights-core"
+		config := &config.RemoteConfig{
+			Name: name,
+			URLs: []string{url},
+		}
+
+		_, err = repo.CreateRemote(config)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprintf(w, "%v", err)
+			return
+		}
+
+		err = repo.Fetch(&git.FetchOptions{RemoteName: name})
+		if err != nil {
+			if err != git.NoErrAlreadyUpToDate {
+				fmt.Fprintf(w, "%v", err)
+			}
+		}
+	}
+
+	getBranches(w, r, p)
+}
+
 func getBranch(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	var err error
 
@@ -161,7 +236,12 @@ func getBranch(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		return
 	}
 
-	branch := plumbing.NewRemoteReferenceName("origin", name)
+	actualRemote := p.ByName("forkname")
+	if actualRemote == "" {
+		actualRemote = "origin"
+	}
+
+	branch := plumbing.NewRemoteReferenceName(actualRemote, name)
 	err = wt.Checkout(&git.CheckoutOptions{
 		Branch: branch,
 	})
@@ -203,7 +283,7 @@ func getBranch(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	}
 
 	w.Header().Set("Content-Type", "application/zip")
-	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"insights-core-%v-%v.egg\"", strings.TrimPrefix(branch.Short(), "origin/"), head.Hash()))
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"insights-core-%v-%v.egg\"", strings.TrimPrefix(branch.Short(), actualRemote+"/"), head.Hash()))
 	w.Header().Set("Content-Length", strconv.FormatInt(int64(len(data)), 10))
 	w.Write(data)
 }

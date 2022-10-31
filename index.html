@@ -1,3 +1,4 @@
+<!doctype html>
 <html>
 	<head>
 		<title>Insights Client Egg Hatcher</title>
@@ -25,59 +26,60 @@
 	<body>
 		<h1>Insights Client<br>🥚<br>Egg Hatcher</h1>
 		<div class='section'>
-			<h2>Get by tag (released):</h2>
+			<h2>Select forked repo (dev):</h2>
+			<select id='forks' onchange='computeForkFilename()'></select>
+			<h2>Build from branch (From selected repo):</h2>
+			<select id='branches' onchange='computeBranchFilename()'></select>
+			<form method='get' id='branchForm'>
+				<button type='submit' id='branchEggDL'>Get .egg</button>
+			</form>
+		</div>
+	
+		<div class='section'>
+			<h2>Get by tag (From RedHatInsights):</h2>
 			<select id='tags' onchange='computeTagFilename()'></select>
 			<div>
 				<form method='get' id='tagForm'>
 					<button type='submit' id='tagEggDL'>Get .egg</button>
 				</form>
-				<!--<form method='get' id='tagAscForm'>
-					<button type='submit' id='tagAscDL'>Get .asc</button>
-				</form> -->
 			</div>
-		</div>
-		<div class='section'>
-			<h2>Build from branch (dev):</h2>
-			<select id='branches' onchange='computeBranchFilename()'></select>
-			<form method='get' id='branchForm'>
-				<button type='submit' id='branchEggDL'>Get .egg</button>
-			</form>
 		</div>
 	</body>
 	<script>
 		var tagSelect = document.getElementById('tags');
 		var branchSelect = document.getElementById('branches');
 		var tagButton1 = document.getElementById('tagEggDL');
-		// var tagButton2 = document.getElementById('tagAscDL');
 		var branchButton = document.getElementById('branchEggDL');
+		var forkSelect = document.getElementById('forks');
 		tagButton1.disabled = true;
-		// tagButton2.disabled = true;
 		branchButton.disabled = true;
+
+		var remote_repo = 'RedHatInsights'
+
+		function updateRemote (selectedFork){
+			remote_repo = selectedFork
+			updateBranch()
+		}
 
 		function computeTagFilename() {
 			var selectedTag = tagSelect.options[tagSelect.selectedIndex].value;
 			document.getElementById('tagForm').action = '/tag/' + selectedTag;
-			// document.getElementById('tagAscForm').action = '/tag/' + selectedTag;
+		}
+
+		function computeForkFilename(){
+			var selectedFork = forkSelect.options[forkSelect.selectedIndex].value;
+			updateRemote(selectedFork);
+
 		}
 
 		function computeBranchFilename() {
 			var selectedBranch = branchSelect.options[branchSelect.selectedIndex].value;
-			document.getElementById('branchForm').action = '/branch/' + selectedBranch;
+			console.log(remote_repo);
+			document.getElementById('branchForm').action = '/fork/' + remote_repo + '/branch/' + selectedBranch;
 		}
 
-		function init() {
-			fetch('/tag')
-			.then(function(res) {
-				return res.json();
-			})
-			.then(function(jso){
-				for (var i in jso) {
-					tagSelect.options[tagSelect.options.length] = new Option(jso[i]['name'], jso[i]['fullTag'])
-				}
-				computeTagFilename();
-				tagButton1.disabled = false;
-			})
-			fetch('/branch')
+		function updateBranch() {
+			fetch(`/fork/${remote_repo}/branch`)
 			.then(function(res) {
 				return res.json();
 			})
@@ -94,6 +96,42 @@
 				computeBranchFilename();
 				branchButton.disabled = false;
 			})
+		}
+
+		function updateFork() {
+			fetch('/fork')
+			.then(function(res){
+				return res.json();
+			})
+			.then(function(jso){
+				for (var i in jso){
+					forkSelect.options[forkSelect.options.length] = new Option(jso[i]['name'])
+				}
+				// set upstream as default
+				for (var i in forkSelect.options){
+					if (forkSelect.options[i].value == remote_repo){
+						forkSelect.selectedIndex = i;
+					}
+				}
+				computeForkFilename();
+				computeBranchFilename()
+			})
+		}
+
+		function init() {
+			updateFork();
+			fetch('/tag')
+			.then(function(res) {
+				return res.json();
+			})
+			.then(function(jso){
+				for (var i in jso) {
+					tagSelect.options[tagSelect.options.length] = new Option(jso[i]['name'], jso[i]['fullTag'])
+				}
+				computeTagFilename();
+				tagButton1.disabled = false;
+			})
+			
 		}
 		init();
 	</script>

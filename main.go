@@ -1,19 +1,58 @@
 package main
 
 import (
+	"context"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/go-git/go-git/v5"
+	"github.com/google/go-github/v47/github"
 	"github.com/julienschmidt/httprouter"
 )
 
 const repoURL = "https://github.com/RedHatInsights/insights-core"
 
-var repoPath = ""
+var repoPath string
+var forksCache = make([]map[string]string, 0)
+var forkCacheTimestamp = time.Now()
+var lock sync.RWMutex
+
+func getGithubForks() error {
+	var err error
+	client := github.NewClient(nil)
+
+	ctx := context.Background()
+	opt := &github.RepositoryListForksOptions{}
+	repos, _, err := client.Repositories.ListForks(ctx, "RedHatInsights", "insights-core", opt)
+
+	if err != nil {
+		return err
+	}
+
+	forks := make([]map[string]string, 0)
+	fork := map[string]string{
+		"fullName": "RedHatInsights/insights-core",
+		"name":     "RedHatInsights",
+	}
+	forks = append(forks, fork)
+	for _, repos := range repos {
+		fork := map[string]string{
+			"fullName": repos.GetFullName(),
+			"name":     *repos.GetOwner().Login,
+		}
+		forks = append(forks, fork)
+
+	}
+	lock.Lock()
+	defer lock.Unlock()
+	forksCache = forks
+	forkCacheTimestamp = time.Now()
+	return err
+}
 
 func main() {
 	var err error
@@ -39,10 +78,26 @@ func main() {
 		}
 	}
 
+	if err := getGithubForks(); err != nil {
+		log.Fatalf("error creating github forks cache: %v", err)
+	} else {
+		log.Println("forked repo cache created")
+	}
+
 	go func() {
 		var err error
 		for {
 			time.Sleep(5 * time.Minute)
+
+			timeNow := time.Now()
+			timeElapse := timeNow.Sub(forkCacheTimestamp).Hours()
+			if timeElapse > 1 {
+				log.Println("refreshing fork cache")
+				if err := getGithubForks(); err != nil {
+					log.Fatalf("error creating github forks cache: %v", err)
+					continue
+				}
+			}
 
 			var repo *git.Repository
 			repo, err = git.PlainOpen(repoPath)
@@ -68,10 +123,13 @@ func main() {
 
 	r := httprouter.New()
 
-	r.GET("/branch", getBranches)
-	r.GET("/branch/:name", getBranch)
+	r.GET("/fork", getCacheForks)
+	r.GET("/fork/:forkname/branch", getBranchesfromFork)
+	r.GET("/fork/:forkname/branch/:name", getBranch)
 	r.GET("/tag", getTags)
 	r.GET("/tag/:name", getTag)
+	r.GET("/branch", getBranches)
+	r.GET("/branch/:name", getBranch)
 	r.GET("/", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		http.ServeFile(w, r, "./index.html")
 	})
