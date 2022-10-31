@@ -29,11 +29,11 @@ func getBranches(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		return
 	}
 
-	remote_name := p.ByName("forkname")
-	if remote_name == "" {
-		remote_name = "origin"
+	remoteName := p.ByName("forkname")
+	if remoteName == "" {
+		remoteName = "origin"
 	}
-	remote, err := repo.Remote(remote_name)
+	remote, err := repo.Remote(remoteName)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "%v", err)
@@ -163,16 +163,16 @@ func getBranchesfromFork(w http.ResponseWriter, r *http.Request, p httprouter.Pa
 		return
 	}
 
-	remote_exists := false
+	remoteExists := false
 	for _, remote := range remotes {
 		if remote.Config().Name == name {
 			//change the remote
-			remote_exists = true
+			remoteExists = true
 		}
 	}
 
 	//create a new remote
-	if !remote_exists {
+	if !remoteExists {
 		url := "https://github.com/" + name + "/insights-core"
 		config := &config.RemoteConfig{
 			Name: name,
@@ -236,12 +236,12 @@ func getBranch(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		return
 	}
 
-	actual_remote := p.ByName("forkname")
-	if actual_remote == "" {
-		actual_remote = "origin"
+	actualRemote := p.ByName("forkname")
+	if actualRemote == "" {
+		actualRemote = "origin"
 	}
 
-	branch := plumbing.NewRemoteReferenceName(actual_remote, name)
+	branch := plumbing.NewRemoteReferenceName(actualRemote, name)
 	err = wt.Checkout(&git.CheckoutOptions{
 		Branch: branch,
 	})
@@ -283,7 +283,7 @@ func getBranch(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	}
 
 	w.Header().Set("Content-Type", "application/zip")
-	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"insights-core-%v-%v.egg\"", strings.TrimPrefix(branch.Short(), actual_remote+"/"), head.Hash()))
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"insights-core-%v-%v.egg\"", strings.TrimPrefix(branch.Short(), actualRemote+"/"), head.Hash()))
 	w.Header().Set("Content-Length", strconv.FormatInt(int64(len(data)), 10))
 	w.Write(data)
 }
