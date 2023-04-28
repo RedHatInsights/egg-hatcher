@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -57,7 +56,7 @@ func getGithubForks() error {
 func main() {
 	var err error
 
-	repoPath, err = ioutil.TempDir("", "egg-hatcher-")
+	repoPath, err = os.MkdirTemp("", "egg-hatcher-")
 	if err != nil {
 		log.Fatal(err)
 	}

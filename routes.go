@@ -3,7 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"os/exec"
@@ -207,7 +207,7 @@ func getBranch(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		return
 	}
 
-	dir, err := ioutil.TempDir("", "egg-hatcher-")
+	dir, err := os.MkdirTemp("", "egg-hatcher-")
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		_, _ = fmt.Fprintf(w, "%v", err)
@@ -268,7 +268,7 @@ func getBranch(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	}
 	defer f.Close()
 
-	data, err := ioutil.ReadAll(f)
+	data, err := io.ReadAll(f)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		_, _ = fmt.Fprintf(w, "%v", err)
@@ -298,7 +298,7 @@ func getTag(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		return
 	}
 
-	dir, err := ioutil.TempDir("", "egg-hatcher-")
+	dir, err := os.MkdirTemp("", "egg-hatcher-")
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		_, _ = fmt.Fprintf(w, "%v", err)
@@ -354,7 +354,7 @@ func getTag(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	}
 	defer f.Close()
 
-	data, err := ioutil.ReadAll(f)
+	data, err := io.ReadAll(f)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		_, _ = fmt.Fprintf(w, "%v", err)
