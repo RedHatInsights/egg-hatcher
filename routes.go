@@ -25,7 +25,7 @@ func getBranches(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	repo, err := git.PlainOpen(repoPath)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "%v", err)
+		_, _ = fmt.Fprintf(w, "%v", err)
 		return
 	}
 
@@ -36,14 +36,14 @@ func getBranches(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	remote, err := repo.Remote(remoteName)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "%v", err)
+		_, _ = fmt.Fprintf(w, "%v", err)
 		return
 	}
 
 	refs, err := remote.List(&git.ListOptions{})
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "%v", err)
+		_, _ = fmt.Fprintf(w, "%v", err)
 		return
 	}
 
@@ -59,7 +59,7 @@ func getBranches(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	}
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "%v", err)
+		_, _ = fmt.Fprintf(w, "%v", err)
 		return
 	}
 	sort.Slice(branches, func(i, j int) bool {
@@ -69,10 +69,10 @@ func getBranches(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	data, err := json.Marshal(&branches)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "%v", err)
+		_, _ = fmt.Fprintf(w, "%v", err)
 		return
 	}
-	w.Write(data)
+	_, _ = w.Write(data)
 }
 
 func getCacheForks(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -84,7 +84,7 @@ func getCacheForks(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 		fmt.Fprintf(w, "%v", err)
 		return
 	}
-	w.Write(data)
+	_, _ = w.Write(data)
 }
 
 func getTags(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -93,21 +93,21 @@ func getTags(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	repo, err := git.PlainOpen(repoPath)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "%v", err)
+		_, _ = fmt.Fprintf(w, "%v", err)
 		return
 	}
 
 	remote, err := repo.Remote("origin")
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "%v", err)
+		_, _ = fmt.Fprintf(w, "%v", err)
 		return
 	}
 
 	refs, err := remote.List(&git.ListOptions{})
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "%v", err)
+		_, _ = fmt.Fprintf(w, "%v", err)
 		return
 	}
 
@@ -123,7 +123,7 @@ func getTags(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	}
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "%v", err)
+		_, _ = fmt.Fprintf(w, "%v", err)
 		return
 	}
 	sort.Slice(tags, func(i, j int) bool {
@@ -133,10 +133,10 @@ func getTags(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	data, err := json.Marshal(&tags)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "%v", err)
+		_, _ = fmt.Fprintf(w, "%v", err)
 		return
 	}
-	w.Write(data)
+	_, _ = w.Write(data)
 }
 
 func getBranchesfromFork(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
@@ -203,21 +203,21 @@ func getBranch(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	name := p.ByName("name")
 	if name == "" {
 		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintf(w, "missing required parameter: name")
+		_, _ = fmt.Fprintf(w, "missing required parameter: name")
 		return
 	}
 
 	dir, err := ioutil.TempDir("", "egg-hatcher-")
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "%v", err)
+		_, _ = fmt.Fprintf(w, "%v", err)
 		return
 	}
 
 	err = copy.Copy(repoPath, dir)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "%v", err)
+		_, _ = fmt.Fprintf(w, "%v", err)
 		return
 	}
 	defer os.RemoveAll(dir)
@@ -225,14 +225,14 @@ func getBranch(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	repo, err := git.PlainOpen(dir)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "%v", err)
+		_, _ = fmt.Fprintf(w, "%v", err)
 		return
 	}
 
 	wt, err := repo.Worktree()
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "%v", err)
+		_, _ = fmt.Fprintf(w, "%v", err)
 		return
 	}
 
@@ -247,7 +247,7 @@ func getBranch(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	})
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "%v", err)
+		_, _ = fmt.Fprintf(w, "%v", err)
 		return
 	}
 
@@ -256,14 +256,14 @@ func getBranch(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	err = cmd.Run()
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "%v", err)
+		_, _ = fmt.Fprintf(w, "%v", err)
 		return
 	}
 
 	f, err := os.Open(filepath.Join(dir, "insights.zip"))
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "%v", err)
+		_, _ = fmt.Fprintf(w, "%v", err)
 		return
 	}
 	defer f.Close()
@@ -271,21 +271,21 @@ func getBranch(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	data, err := ioutil.ReadAll(f)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "%v", err)
+		_, _ = fmt.Fprintf(w, "%v", err)
 		return
 	}
 
 	head, err := repo.Head()
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "%v", err)
+		_, _ = fmt.Fprintf(w, "%v", err)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/zip")
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"insights-core-%v-%v.egg\"", strings.TrimPrefix(branch.Short(), actualRemote+"/"), head.Hash()))
 	w.Header().Set("Content-Length", strconv.FormatInt(int64(len(data)), 10))
-	w.Write(data)
+	_, _ = w.Write(data)
 }
 
 func getTag(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
@@ -294,21 +294,21 @@ func getTag(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	name := p.ByName("name")
 	if name == "" {
 		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintf(w, "missing required parameter: name")
+		_, _ = fmt.Fprintf(w, "missing required parameter: name")
 		return
 	}
 
 	dir, err := ioutil.TempDir("", "egg-hatcher-")
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "%v", err)
+		_, _ = fmt.Fprintf(w, "%v", err)
 		return
 	}
 
 	err = copy.Copy(repoPath, dir)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "%v", err)
+		_, _ = fmt.Fprintf(w, "%v", err)
 		return
 	}
 	defer os.RemoveAll(dir)
@@ -316,14 +316,14 @@ func getTag(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	repo, err := git.PlainOpen(dir)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "%v", err)
+		_, _ = fmt.Fprintf(w, "%v", err)
 		return
 	}
 
 	wt, err := repo.Worktree()
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "%v", err)
+		_, _ = fmt.Fprintf(w, "%v", err)
 		return
 	}
 
@@ -333,7 +333,7 @@ func getTag(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	})
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "%v", err)
+		_, _ = fmt.Fprintf(w, "%v", err)
 		return
 	}
 
@@ -342,14 +342,14 @@ func getTag(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	err = cmd.Run()
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "%v", err)
+		_, _ = fmt.Fprintf(w, "%v", err)
 		return
 	}
 
 	f, err := os.Open(filepath.Join(dir, "insights.zip"))
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "%v", err)
+		_, _ = fmt.Fprintf(w, "%v", err)
 		return
 	}
 	defer f.Close()
@@ -357,18 +357,18 @@ func getTag(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	data, err := ioutil.ReadAll(f)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "%v", err)
+		_, _ = fmt.Fprintf(w, "%v", err)
 		return
 	}
 	head, err := repo.Head()
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "%v", err)
+		_, _ = fmt.Fprintf(w, "%v", err)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/zip")
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"insights-core-%v-%v.egg\"", strings.TrimPrefix(branch.Short(), "origin/"), head.Hash()))
 	w.Header().Set("Content-Length", strconv.FormatInt(int64(len(data)), 10))
-	w.Write(data)
+	_, _ = w.Write(data)
 }
