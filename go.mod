@@ -6,7 +6,7 @@ require (
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/google/go-github/v47 v47.1.0
 	github.com/julienschmidt/httprouter v1.3.0
-	github.com/otiai10/copy v1.7.0
+	github.com/otiai10/copy v1.14.0
 )
 
 require (
@@ -25,6 +25,7 @@ require (
 	github.com/xanzy/ssh-agent v0.3.0 // indirect
 	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5 // indirect
 	golang.org/x/net v0.0.0-20210326060303-6b1517762897 // indirect
-	golang.org/x/sys v0.0.0-20210615035016-665e8c7367d1 // indirect
+	golang.org/x/sync v0.3.0 // indirect
+	golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
